@@ -1,0 +1,313 @@
+FINAL PROJECT - SUBMISSION ANSWERS
+Repository: https://github.com/SudoJude/oaqjp-final-project-emb-ai
+====================================================================
+
+TASK 1: GitHub repository URL
+====================================================================
+https://github.com/SudoJude/oaqjp-final-project-emb-ai
+
+(This is the repository containing README.md with the project name.)
+
+
+TASK 2: emotion_detection.py - application function
+====================================================================
+Activity 1 - code from emotion_detection.py:
+--------------------------------------------------------------------
+"""Runs emotion detection over text using the Watson NLP EmotionPredict service."""
+import json
+import requests
+
+
+def emotion_detector(text_to_analyze):
+    """Return emotion scores and the dominant emotion for the given text."""
+    url = ('https://sn-watson-emotion.labs.skills.network/v1/watson.runtime'
+           '.nlp.v1/NlpService/EmotionPredict')
+    header = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
+    myobj = {"raw_document": {"text": text_to_analyze}}
+
+    response = requests.post(url, json=myobj, headers=header, timeout=10)
+
+    # Check status code FIRST before attempting to parse JSON
+    if response.status_code == 400:
+        return {
+            'anger': None,
+            'disgust': None,
+            'fear': None,
+            'joy': None,
+            'sadness': None,
+            'dominant_emotion': None
+        }
+
+    formatted_response = json.loads(response.text)
+
+    emotions = formatted_response['emotionPredictions'][0]['emotion']
+    anger_score = emotions['anger']
+    disgust_score = emotions['disgust']
+    fear_score = emotions['fear']
+    joy_score = emotions['joy']
+    sadness_score = emotions['sadness']
+
+    dominant_emotion = max(emotions, key=emotions.get)
+
+    return {
+        'anger': anger_score,
+        'disgust': disgust_score,
+        'fear': fear_score,
+        'joy': joy_score,
+        'sadness': sadness_score,
+        'dominant_emotion': dominant_emotion
+    }
+
+Activity 2 - terminal output (import + test):
+--------------------------------------------------------------------
+[[ TODO - MUST BE CAPTURED IN THE IBM SKILLS NETWORK IDE - see instructions
+   at the bottom of this file, item (A). ]]
+
+Expected commands:
+$ python3
+>>> from emotion_detection import emotion_detector
+>>> emotion_detector("I love this new technology.")
+
+
+TASK 3: Format the output of the application
+====================================================================
+Activity 1 - code showing the modified emotion_detector function:
+--------------------------------------------------------------------
+(Same function shown in Task 2 above already returns the formatted
+dict: {'anger': ..., 'disgust': ..., 'fear': ..., 'joy': ...,
+'sadness': ..., 'dominant_emotion': ...} instead of raw JSON text.)
+
+Activity 2 - terminal output showing the output format is accurate:
+--------------------------------------------------------------------
+[[ TODO - MUST BE CAPTURED IN THE IBM SKILLS NETWORK IDE - see item (A). ]]
+
+Expected output shape:
+{'anger': 0.00xx, 'disgust': 0.00xx, 'fear': 0.00xx, 'joy': 0.98xx,
+ 'sadness': 0.00xx, 'dominant_emotion': 'joy'}
+
+
+TASK 4: Validate the EmotionDetection package
+====================================================================
+Activity 1 - GitHub URL of __init__.py:
+--------------------------------------------------------------------
+https://github.com/SudoJude/oaqjp-final-project-emb-ai/blob/main/EmotionDetection/__init__.py
+
+Contents of EmotionDetection/__init__.py:
+from . import emotion_detection
+
+Activity 2 - terminal output validating EmotionDetection is a valid package:
+--------------------------------------------------------------------
+[[ TODO - MUST BE CAPTURED IN THE IBM SKILLS NETWORK IDE - see item (B). ]]
+
+Expected commands:
+$ python3
+>>> import EmotionDetection
+>>> from EmotionDetection.emotion_detection import emotion_detector
+>>> emotion_detector("I love this new technology.")
+
+
+TASK 5: Unit tests
+====================================================================
+Activity 1 - code from test_emotion_detection.py:
+--------------------------------------------------------------------
+"""Unit tests for the emotion_detector function."""
+import unittest
+from EmotionDetection.emotion_detection import emotion_detector
+
+
+class TestEmotionDetector(unittest.TestCase):
+    """Verifies emotion_detector returns the expected dominant emotion."""
+
+    def test_emotion_detector(self):
+        """Checks each emotion is correctly identified as dominant."""
+        # Test for joy
+        result_1 = emotion_detector('I am glad this happened')
+        self.assertEqual(result_1['dominant_emotion'], 'joy')
+
+        # Test for anger
+        result_2 = emotion_detector('I am really mad about this')
+        self.assertEqual(result_2['dominant_emotion'], 'anger')
+
+        # Test for disgust
+        result_3 = emotion_detector('I feel disgusted just hearing about this')
+        self.assertEqual(result_3['dominant_emotion'], 'disgust')
+
+        # Test for sadness
+        result_4 = emotion_detector('I am so sad about this')
+        self.assertEqual(result_4['dominant_emotion'], 'sadness')
+
+        # Test for fear
+        result_5 = emotion_detector('I am really afraid that this will happen')
+        self.assertEqual(result_5['dominant_emotion'], 'fear')
+
+if __name__ == '__main__':
+    unittest.main()
+
+Activity 2 - terminal output showing all unit tests passed:
+--------------------------------------------------------------------
+[[ TODO - MUST BE CAPTURED IN THE IBM SKILLS NETWORK IDE - see item (C). ]]
+
+Expected command and output:
+$ python3 -m unittest test_emotion_detection.py
+.
+----------------------------------------------------------------------
+Ran 1 test in x.xxxs
+
+OK
+
+
+TASK 6: Web deployment using Flask
+====================================================================
+Activity 1 - code from server.py:
+--------------------------------------------------------------------
+"""
+Executing this file initiates the application of emotion
+detection to be executed over the Flask channel and deployed on
+localhost:5000.
+"""
+from flask import Flask, render_template, request
+from EmotionDetection.emotion_detection import emotion_detector
+
+app = Flask("Emotion Detector")
+
+@app.route("/emotionDetector")
+def sent_detector():
+    """
+    This function receives the text from the HTML interface and
+    runs emotion detection over it using the emotion_detector()
+    function. The output is returned as a formatted string.
+    """
+    text_to_analyze = request.args.get('textToAnalyze')
+
+    if not text_to_analyze or text_to_analyze.strip() == "":
+        return "Invalid text! Please try again!"
+
+    response = emotion_detector(text_to_analyze)
+    dominant_emotion = response.get('dominant_emotion')
+
+    if dominant_emotion is None:
+        return "Invalid text! Please try again!"
+
+    anger = response['anger']
+    disgust = response['disgust']
+    fear = response['fear']
+    joy = response['joy']
+    sadness = response['sadness']
+
+    return (
+        f"For the given statement, the system response is 'anger': {anger}, "
+        f"'disgust': {disgust}, 'fear': {fear}, 'joy': {joy} "
+        f"and 'sadness': {sadness}. The dominant emotion is {dominant_emotion}."
+    )
+
+@app.route("/")
+def render_index_page():
+    """
+    This function initiates the rendering of the main application
+    page over the Flask channel.
+    """
+    return render_template('index.html')
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+Activity 2 - screenshot 6b_deployment_test.png:
+--------------------------------------------------------------------
+[[ TODO - MUST BE CAPTURED IN THE IBM SKILLS NETWORK IDE - see item (D). ]]
+
+
+TASK 7: Error handling
+====================================================================
+Activity 1 - code from emotion_detection.py for status code 400:
+--------------------------------------------------------------------
+    response = requests.post(url, json=myobj, headers=header, timeout=10)
+
+    # Check status code FIRST before attempting to parse JSON
+    if response.status_code == 400:
+        return {
+            'anger': None,
+            'disgust': None,
+            'fear': None,
+            'joy': None,
+            'sadness': None,
+            'dominant_emotion': None
+        }
+
+Activity 2 - code from server.py handling blank input errors:
+--------------------------------------------------------------------
+    text_to_analyze = request.args.get('textToAnalyze')
+
+    if not text_to_analyze or text_to_analyze.strip() == "":
+        return "Invalid text! Please try again!"
+
+    response = emotion_detector(text_to_analyze)
+    dominant_emotion = response.get('dominant_emotion')
+
+    if dominant_emotion is None:
+        return "Invalid text! Please try again!"
+
+Activity 3 - screenshot 7c_error_handling_interface.png:
+--------------------------------------------------------------------
+[[ TODO - MUST BE CAPTURED IN THE IBM SKILLS NETWORK IDE - see item (E). ]]
+
+
+TASK 8: Static code analysis
+====================================================================
+Activity 1 - code from server.py demonstrating static code analysis:
+--------------------------------------------------------------------
+(Same server.py code shown in Task 6 above - it is the file that was
+analyzed with pylint.)
+
+Command used:
+$ python3 -m pylint server.py
+
+Activity 2 - terminal output showing a perfect score:
+--------------------------------------------------------------------
+Verified locally on 2026-09-08:
+
+$ python3 -m pylint server.py
+--------------------------------------------------------------------
+Your code has been rated at 10.00/10
+
+====================================================================
+THINGS YOU STILL NEED TO DO INSIDE THE IBM SKILLS NETWORK IDE
+====================================================================
+Everything above is already written and committed to GitHub. The
+remaining items all need real network access to the Watson NLP
+sandbox (sn-watson-emotion.labs.skills.network), which only resolves
+inside the Skills Network Cloud IDE - it is not reachable from a
+local machine. Do these before you close that IDE:
+
+(A) Task 2b / 3b - open a terminal in the IDE, run:
+      python3
+    then in the shell:
+      >>> from emotion_detection import emotion_detector
+      >>> emotion_detector("I love this new technology.")
+    Copy/paste (or screenshot) the whole terminal session, including
+    the dict output, showing joy as the dominant emotion.
+
+(B) Task 4b - in the same or a new terminal:
+      python3
+    then:
+      >>> import EmotionDetection
+      >>> from EmotionDetection.emotion_detection import emotion_detector
+      >>> emotion_detector("I love this new technology.")
+    No errors on import = valid package. Copy/paste or screenshot this.
+
+(C) Task 5b - from the project root, run:
+      python3 -m unittest test_emotion_detection.py
+    Copy/paste or screenshot the "Ran 1 test ... OK" output.
+
+(D) Task 6b - run the Flask app:
+      python3 server.py
+    Open the app in the browser (Launch Application / exposed port),
+    enter some text, submit, and screenshot the browser output as
+    6b_deployment_test.png.
+
+(E) Task 7c - with the Flask app still running, submit a BLANK input
+    in the web form and screenshot the "Invalid text! Please try
+    again!" response as 7c_error_handling_interface.png.
+
+Everything else (Tasks 1, 2a, 3a, 4a, 5a, 6a, 7a, 7b, 8a, 8b) is
+already done and does not require the IDE - it's all in this file and
+in the GitHub repo already.

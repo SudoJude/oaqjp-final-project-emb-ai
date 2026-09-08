@@ -1,8 +1,13 @@
+"""Unit tests for the emotion_detector function."""
 import unittest
 from EmotionDetection.emotion_detection import emotion_detector
 
+
 class TestEmotionDetector(unittest.TestCase):
+    """Verifies emotion_detector returns the expected dominant emotion."""
+
     def test_emotion_detector(self):
+        """Checks each emotion is correctly identified as dominant."""
         # Test for joy
         result_1 = emotion_detector('I am glad this happened')
         self.assertEqual(result_1['dominant_emotion'], 'joy')
